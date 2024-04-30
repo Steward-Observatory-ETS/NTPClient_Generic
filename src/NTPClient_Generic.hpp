@@ -60,6 +60,7 @@
 ////////////////////////////////////////
 
 #include "Arduino.h"
+#include "TeensyThreads.h"
 
 #include <TimeLib.h>    // https://github.com/PaulStoffregen/Time
 
@@ -109,6 +110,7 @@ class NTPClient
   private:
     UDP*          _udp;
     bool          _udpSetup       = false;
+    Threads::Mutex *_udp_lock     = NULL;
 
     const char*   _poolServerName = "pool.ntp.org";                 // Default time server
     IPAddress     _poolServerIP   = IPAddress(162,159,200,123);     // Default time server IP of "pool.ntp.org"
@@ -135,9 +137,9 @@ class NTPClient
   public:
     NTPClient(const long& timeOffset = 0);
     
-    NTPClient(UDP& udp, const long& timeOffset = 0);
-    NTPClient(UDP& udp, const char* poolServerName, const long& timeOffset = 0, const unsigned long& updateInterval = 60000);
-    NTPClient(UDP& udp, const IPAddress& poolServerIP, const long& timeOffset = 0, const unsigned long& updateInterval = 60000);
+    NTPClient(UDP& udp, const long& timeOffset = 0, Threads::Mutex *udp_lock = NULL);
+    NTPClient(UDP& udp, const char* poolServerName, const long& timeOffset = 0, const unsigned long& updateInterval = 60000, Threads::Mutex *udp_lock = NULL);
+    NTPClient(UDP& udp, const IPAddress& poolServerIP, const long& timeOffset = 0, const unsigned long& updateInterval = 60000, Threads::Mutex *udp_lock = NULL);
 
     ////////////////////////////////////////
 
@@ -146,9 +148,10 @@ class NTPClient
       
       @param UDPsocket
     */
-    inline void setUDP(UDP& udp)
+    inline void setUDP(UDP& udp, Threads::Mutex *udp_lock = NULL)
     {
       this->_udp = &udp;
+      this->_udp_lock = udp_lock;
     }
 
     ////////////////////////////////////////
@@ -535,7 +538,11 @@ class NTPClient
     */
     void end() 
     {
+      if (this->_udp_lock != NULL)
+        this->_udp_lock->lock();
       this->_udp->stop();
+      if (this->_udp_lock != NULL)
+        this->_udp_lock->unlock();
 
       this->_udpSetup = false;
     }

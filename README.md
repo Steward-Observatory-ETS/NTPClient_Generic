@@ -1,5 +1,19 @@
 ## NTPClient_Generic Library
 
+
+> **Notes on the SO-ETS Fork:**
+> 
+> This fork of the upstream NTPClient_Generic library provides the option to ensure single-threaded access to the
+> network, which may be necessary if running this in a multi-threaded application.  Add it to
+> your library list using Sketch -> Include library -> Add .ZIP Library... in the Arduino IDE and selecting the folder
+> where this README file is located.  This will *copy* the library files to the ArduinoIDE user library area (which
+> you can find under File -> Preferences -> Sketchbook location).  Any updates to your local fork of the repository
+> *must be copied manually* to the user library area.
+> 
+> After adding this library the Arduino IDE will use this SO-ETS fork for compiling code instead of the original
+> upstream NTPClient_Generic library.
+
+
 [![arduino-library-badge](https://www.ardu-badge.com/badge/NTPClient_Generic.svg?)](https://www.ardu-badge.com/NTPClient_Generic)
 [![GitHub release](https://img.shields.io/github/release/khoih-prog/NTPClient_Generic.svg)](https://github.com/khoih-prog/NTPClient_Generic/releases)
 [![GitHub](https://img.shields.io/github/license/mashape/apistatus.svg)](https://github.com/khoih-prog/NTPClient_Generic/blob/main/LICENSE)

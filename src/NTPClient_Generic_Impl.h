@@ -56,31 +56,34 @@ NTPClient::NTPClient(const long& timeOffset)
 
 /////////////////////////////
 
-NTPClient::NTPClient(UDP& udp, const long& timeOffset)
+NTPClient::NTPClient(UDP& udp, const long& timeOffset, Threads::Mutex *udp_lock)
 {
   this->_udp            = &udp;
   this->_timeOffset     = timeOffset;
+  this->_udp_lock       = udp_lock;
 }
 
 /////////////////////////////
 
-NTPClient::NTPClient(UDP& udp, const char* poolServerName, const long& timeOffset, const unsigned long& updateInterval)
+NTPClient::NTPClient(UDP& udp, const char* poolServerName, const long& timeOffset, const unsigned long& updateInterval, Threads::Mutex *udp_lock)
 {
   this->_udp            = &udp;
   this->_timeOffset     = timeOffset;
   this->_poolServerName = poolServerName;
   this->_updateInterval = updateInterval;
+  this->_udp_lock       = udp_lock;
 }
 
 /////////////////////////////
 
-NTPClient::NTPClient(UDP& udp, const IPAddress& poolServerIP, const long& timeOffset, const unsigned long& updateInterval)
+NTPClient::NTPClient(UDP& udp, const IPAddress& poolServerIP, const long& timeOffset, const unsigned long& updateInterval, Threads::Mutex *udp_lock)
 {
   this->_udp            = &udp;
   this->_timeOffset     = timeOffset;
   this->_poolServerIP   = poolServerIP;
   this->_poolServerName = NULL;
   this->_updateInterval = updateInterval;
+  this->_udp_lock       = udp_lock;
 }
 
 /////////////////////////////
@@ -89,7 +92,11 @@ void NTPClient::begin(int port)
 {
   this->_port = port;
 
+  if (this->_udp_lock != NULL)
+    this->_udp_lock->lock();
   this->_udp->begin(this->_port);
+  if (this->_udp_lock != NULL)
+    this->_udp_lock->unlock();
 
   this->_udpSetup = true;
 }
@@ -133,10 +140,15 @@ static bool isValid(byte const *ntpPacket)
 
 bool NTPClient::checkResponse()
 {
-  if (this->_udp->parsePacket())
+  if (this->_udp_lock != NULL)
+    this->_udp_lock->lock();
+  bool reply_received = this->_udp->parsePacket();
+  if (reply_received)
   {
     this->_lastRequest = 0; // no outstanding request
     int numBytesRead = this->_udp->read(this->_packetBuffer, NTP_PACKET_SIZE);
+    if (this->_udp_lock != NULL)
+      this->_udp_lock->unlock();
 
     NTP_LOGDEBUG1("numBytesRead (48) =", numBytesRead);
 
@@ -166,6 +178,8 @@ bool NTPClient::checkResponse()
       return true;
     }
   }
+  else if (this->_udp_lock != NULL)
+    this->_udp_lock->unlock();
 
   return false;
 }
@@ -177,8 +191,12 @@ bool NTPClient::forceUpdate()
   NTP_LOGDEBUG("forceUpdate from NTP Server");
 
   // flush any existing packets
+  if (this->_udp_lock != NULL)
+    this->_udp_lock->lock();
   while (this->_udp->parsePacket() != 0)
     this->_udp->flush();
+  if (this->_udp_lock != NULL)
+    this->_udp_lock->unlock();
 
   this->sendNTPPacket();
 
@@ -333,6 +351,8 @@ void NTPClient::sendNTPPacket()
 
   // all NTP fields have been given values, now
   // you can send a packet requesting a timestamp:
+  if (this->_udp_lock != NULL)
+    this->_udp_lock->lock();
   if  (this->_poolServerName)
   {
     this->_udp->beginPacket(this->_poolServerName, NTP_SEVER_PORT);
@@ -344,6 +364,8 @@ void NTPClient::sendNTPPacket()
 
   this->_udp->write(this->_packetBuffer, NTP_PACKET_SIZE);
   this->_udp->endPacket();
+  if (this->_udp_lock != NULL)
+    this->_udp_lock->unlock();
 
   this->_lastRequest = millis();
 }

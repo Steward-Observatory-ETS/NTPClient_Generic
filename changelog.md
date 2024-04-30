@@ -12,6 +12,7 @@
 ## Table of Contents
 
 * [Changelog](#changelog)
+  * [Releases v3.7.6 SO-ETS](#releases-v376)
   * [Releases v3.7.5](#releases-v375)
   * [Releases v3.7.4](#releases-v374)
   * [Releases v3.7.3](#releases-v373)
@@ -32,6 +33,11 @@
 ---
 
 ## Changelog
+
+### Releases v3.7.6 SO-ETS
+
+1. Forked from upstream project [NTPClient_Generic](https://github.com/khoih-prog/NTPClient_Generic)
+2. Add option to enforce single-threaded access to the network to prevent conflicts with other threads. Check [Teensy rebooted after 45 hours of operation #35](https://github.com/Steward-Observatory-ETS/soml_cf_ppi/issues/35)
 
 ### Releases v3.7.5
 
